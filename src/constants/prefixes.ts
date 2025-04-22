@@ -3,13 +3,14 @@ export type PrefixType = '@' | '!' | '?' | '#';
 export interface PrefixDefinition {
   type: PrefixType;
   description: string;
+  symbol: string;
 }
 
 export const PREFIXES: Record<string, PrefixDefinition> = {
-  '@': { type: '@', description: 'person' },
-  '!': { type: '!', description: 'action' },
-  '?': { type: '?', description: 'idea' },
-  '#': { type: '#', description: 'tag' }
+  '@': { type: '@', description: 'person', symbol: '@' },
+  '!': { type: '!', description: 'action', symbol: '!' },
+  '?': { type: '?', description: 'idea', symbol: '?' },
+  '#': { type: '#', description: 'tag', symbol: '#' }
 };
 
 export const getPrefixType = (symbol: string): PrefixType | null => {

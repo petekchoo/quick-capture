@@ -1,26 +1,27 @@
-import { useState } from 'react';
-import { PrefixType } from '../types/database';
 import { PREFIXES } from '../constants/prefixes';
+import type { PrefixType } from '../types/entry';
 
 interface PrefixTagProps {
   type: PrefixType;
   value: string;
-  onEdit: () => void;
+  onRemove?: () => void;
 }
 
-export function PrefixTag({ type, value, onEdit }: PrefixTagProps) {
-  const prefixInfo = PREFIXES[type === 'person' ? '@' : 
-                          type === 'action' ? '!' : 
-                          type === 'idea' ? '?' : '#'];
-
+export function PrefixTag({ type, value, onRemove }: PrefixTagProps) {
+  const prefixDef = PREFIXES[type];
+  
   return (
-    <span
-      onClick={onEdit}
-      className={`inline-flex items-center px-2 py-1 rounded-full text-sm font-mono cursor-pointer
-        bg-${prefixInfo.type}-500/10 text-${prefixInfo.type}-500
-        hover:bg-${prefixInfo.type}-500/20 transition-colors`}
-    >
-      {prefixInfo.symbol}{value}
+    <span className="inline-flex items-center gap-1 px-2 py-1 text-sm bg-gray-800 rounded-full text-gray-300">
+      <span className="text-gray-400">{prefixDef.symbol}</span>
+      <span>{value}</span>
+      {onRemove && (
+        <button
+          onClick={onRemove}
+          className="ml-1 text-gray-400 hover:text-gray-300"
+        >
+          ×
+        </button>
+      )}
     </span>
   );
 } 

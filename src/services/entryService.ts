@@ -4,7 +4,6 @@ import type { PrefixType } from '../types/database';
 import { getPrefixType, isValidPrefix, PREFIXES } from '../constants/prefixes';
 
 type Entry = Database['public']['Tables']['entries']['Row'];
-type Prefix = Database['public']['Tables']['prefixes']['Row'];
 
 export interface ParsedEntry {
   content: string;

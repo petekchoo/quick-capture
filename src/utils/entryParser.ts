@@ -27,7 +27,7 @@ export function parseEntry(content: string): ParsedEntry {
   const prefixRegex = /\[([@!?#])([^\]]+)\]/g;
   let match;
   while ((match = prefixRegex.exec(content)) !== null) {
-    const [fullMatch, symbol, value] = match;
+    const [fullMatch] = match;
     // Store the full prefix with brackets
     prefixes.push(fullMatch);
   }

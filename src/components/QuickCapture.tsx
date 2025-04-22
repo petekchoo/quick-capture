@@ -1,11 +1,9 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { EntryService } from '../services/entryService';
 import { parseEntry } from '../utils/entryParser';
 import { supabase } from '../services/supabase';
-import { debounce } from 'lodash';
-import { PrefixOverlay } from './PrefixOverlay';
-import { EntryState, TextSegment, PrefixType } from '../types/entry';
-import { PREFIXES, getPrefixType } from '../constants/prefixes';
+import { EntryState, PrefixType } from '../types/entry';
+import { PREFIXES } from '../constants/prefixes';
 import './QuickCapture.css';
 import { PrefixSearch } from './PrefixSearch';
 import { FilteredEntries } from './FilteredEntries';
