@@ -195,18 +195,18 @@ export class EntryService {
     if (error) throw error;
   }
 
-  static async getPrefixesByType(type: PrefixType) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
-
+  async getPrefixesByType(userId: string, type: string): Promise<{ id: string; value: string }[]> {
     const { data, error } = await supabase
       .from('prefixes')
-      .select('value')
-      .eq('user_id', user.id)
-      .eq('type', type)
-      .order('value');
+      .select('id, value')
+      .eq('user_id', userId)
+      .eq('type', type);
 
-    if (error) throw error;
-    return data.map(prefix => prefix.value);
+    if (error) {
+      console.error('Error fetching prefixes:', error);
+      return [];
+    }
+
+    return data || [];
   }
 } 

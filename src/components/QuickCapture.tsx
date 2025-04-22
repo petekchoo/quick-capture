@@ -172,48 +172,6 @@ export function QuickCapture() {
     }
   }, [highlightedIndex]);
 
-  const getCursorPosition = () => {
-    if (!textareaRef.current) return null;
-    const textarea = textareaRef.current;
-    const rect = textarea.getBoundingClientRect();
-    const cursorPos = textarea.selectionStart;
-    const textBeforeCursor = textarea.value.substring(0, cursorPos);
-    const lines = textBeforeCursor.split('\n');
-    const currentLine = lines[lines.length - 1];
-    
-    // Create a temporary span to measure text width
-    const span = document.createElement('span');
-    span.textContent = currentLine;
-    span.style.visibility = 'hidden';
-    span.style.position = 'absolute';
-    span.style.font = window.getComputedStyle(textarea).font;
-    document.body.appendChild(span);
-    const width = span.offsetWidth;
-    document.body.removeChild(span);
-
-    return {
-      x: rect.left + width + 10,
-      y: rect.top + (lines.length - 1) * parseInt(window.getComputedStyle(textarea).lineHeight),
-    };
-  };
-
-  const isPrefixTrigger = (text: string, cursorPos: number): boolean => {
-    const char = text[cursorPos - 1];
-    return Object.keys(PREFIXES).includes(char);
-  };
-
-  const getPrefixType = (text: string, cursorPos: number): PrefixType | null => {
-    const char = text[cursorPos - 1];
-    return PREFIXES[char]?.type || null;
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
-
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setEntryState(prev => ({ ...prev, content: value }));
@@ -259,6 +217,13 @@ export function QuickCapture() {
   const handlePrefixSubmit = () => {
     if (entryState.prefixInput) {
       handlePrefixSelect(entryState.prefixInput);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
     }
   };
 
