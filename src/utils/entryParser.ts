@@ -1,4 +1,3 @@
-import type { PrefixType } from '../types/database';
 import { ParsedEntry } from '../types/entry';
 
 export function parseEntry(content: string): ParsedEntry {
