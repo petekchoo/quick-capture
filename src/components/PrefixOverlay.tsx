@@ -1,18 +1,23 @@
-import { useEffect, useRef } from 'react';
-import { PrefixType } from '../types/entry';
+import { useState, useEffect, useRef } from 'react';
 import { PREFIXES } from '../constants/prefixes';
+import type { PrefixType } from '../types/entry';
 
 interface PrefixOverlayProps {
   prefixType: PrefixType;
-  onComplete: (value: string) => void;
+  value: string;
+  onSelect: (value: string) => void;
   onCancel: () => void;
 }
 
-export function PrefixOverlay({ prefixType, onComplete, onCancel }: PrefixOverlayProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+export function PrefixOverlay({ prefixType, value, onSelect, onCancel }: PrefixOverlayProps) {
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
-  // Find the symbol for the given prefix type
-  const symbol = Object.entries(PREFIXES).find(([_, def]) => def.type === prefixType)?.[0] || '';
+  // Find the symbol by matching the type
+  const symbol = Object.entries(PREFIXES).find(
+    ([_, def]) => def.type === prefixType
+  )?.[0] || '';
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -21,7 +26,7 @@ export function PrefixOverlay({ prefixType, onComplete, onCancel }: PrefixOverla
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      onComplete(e.currentTarget.value);
+      onSelect(e.currentTarget.value);
     } else if (e.key === 'Escape') {
       e.preventDefault();
       onCancel();
@@ -38,6 +43,7 @@ export function PrefixOverlay({ prefixType, onComplete, onCancel }: PrefixOverla
       
       {/* Modal content */}
       <div 
+        ref={overlayRef}
         className="relative bg-gray-900 rounded-xl p-6 shadow-2xl w-96"
       >
         <div className="flex flex-col gap-4">
@@ -59,7 +65,7 @@ export function PrefixOverlay({ prefixType, onComplete, onCancel }: PrefixOverla
               Cancel
             </button>
             <button
-              onClick={() => onComplete(inputRef.current?.value || '')}
+              onClick={() => onSelect(inputRef.current?.value || '')}
               className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
             >
               Add

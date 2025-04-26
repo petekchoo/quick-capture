@@ -129,7 +129,7 @@ export class EntryService {
   }
 
   static async getEntries(filters?: {
-    prefixTypes?: PrefixType[];
+    prefixTypes?: string[];
     prefixValues?: string[];
     startDate?: Date;
     endDate?: Date;
@@ -156,33 +156,43 @@ export class EntryService {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    if (filters?.prefixValues?.length) {
-      // Get all entries that have any of the selected prefixes
+    // Case 1: Only type filter
+    if (filters?.prefixTypes?.length && !filters?.prefixValues?.length) {
+      query = query.in('entry_prefixes.prefix.type', filters.prefixTypes);
+    }
+    
+    // Case 2: Only prefix values
+    if (!filters?.prefixTypes?.length && filters?.prefixValues?.length) {
+      // First get entries with any of the required values
       query = query.in('entry_prefixes.prefix.value', filters.prefixValues);
-    }
-
-    if (filters?.startDate) {
-      query = query.gte('created_at', filters.startDate.toISOString());
-    }
-
-    if (filters?.endDate) {
-      query = query.lte('created_at', filters.endDate.toISOString());
-    }
-
-    const { data, error } = await query;
-
-    if (error) throw error;
-
-    // Additional client-side filtering to ensure all prefixes are present
-    if (filters?.prefixValues?.length) {
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      
+      // Then filter to ensure all required values are present
       return data.filter(entry => {
         const entryPrefixValues = entry.entry_prefixes.map((ep: { prefix: { value: string } }) => ep.prefix.value);
-        return filters.prefixValues!.every(prefixValue => 
-          entryPrefixValues.includes(prefixValue)
-        );
+        return filters.prefixValues!.every(value => entryPrefixValues.includes(value));
+      });
+    }
+    
+    // Case 3: Both type and prefix values
+    if (filters?.prefixTypes?.length && filters?.prefixValues?.length) {
+      // First get entries with the required type
+      query = query.in('entry_prefixes.prefix.type', filters.prefixTypes);
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      
+      // Then filter to ensure all required values are present
+      return data.filter(entry => {
+        const entryPrefixValues = entry.entry_prefixes.map((ep: { prefix: { value: string } }) => ep.prefix.value);
+        return filters.prefixValues!.every(value => entryPrefixValues.includes(value));
       });
     }
 
+    const { data, error } = await query;
+    if (error) throw error;
     return data;
   }
 
@@ -206,6 +216,34 @@ export class EntryService {
       console.error('Error fetching prefixes:', error);
       return [];
     }
+
+    return data || [];
+  }
+
+  static async getAvailablePrefixes(entryIds?: string[]): Promise<{ id: string; value: string; type: string }[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    let query = supabase
+      .from('prefixes')
+      .select('id, value, type')
+      .eq('user_id', user.id);
+
+    if (entryIds && entryIds.length > 0) {
+      // If entryIds are provided, only get prefixes from those entries
+      const { data: entryPrefixes } = await supabase
+        .from('entry_prefixes')
+        .select('prefix_id')
+        .in('entry_id', entryIds);
+
+      if (entryPrefixes) {
+        const prefixIds = entryPrefixes.map(ep => ep.prefix_id);
+        query = query.in('id', prefixIds);
+      }
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
 
     return data || [];
   }
