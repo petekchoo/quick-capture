@@ -1,33 +1,24 @@
-import { useState, useEffect, useRef } from 'react';
-import { EntryService } from '../services/entryService';
+import { useState } from 'react';
 import { PREFIXES, PrefixType } from '../constants/prefixes';
 
-interface Prefix {
-  id: string;
-  type: string;
-  value: string;
-}
-
 interface PrefixSearchProps {
-  availablePrefixes: Prefix[];
+  availablePrefixes: { id: string; value: string; type: string }[];
   selectedPrefixIds: string[];
   onPrefixSelect: (prefixId: string) => void;
   onPrefixRemove: (prefixId: string) => void;
-  currentSymbol: PrefixType | null;
+  currentSymbol?: string | null;
 }
 
-export function PrefixSearch({
-  availablePrefixes,
-  selectedPrefixIds,
-  onPrefixSelect,
+export function PrefixSearch({ 
+  availablePrefixes, 
+  selectedPrefixIds, 
+  onPrefixSelect, 
   onPrefixRemove,
-  currentSymbol
+  currentSymbol 
 }: PrefixSearchProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedIndex, setSelectedIndex] = useState(-1);
-  const [isFocused, setIsFocused] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const resultsRef = useRef<HTMLDivElement>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
   // Detect if search term starts with a prefix symbol
   const getSymbolFromSearch = (term: string): PrefixType | null => {
@@ -58,7 +49,7 @@ export function PrefixSearch({
   // Get the current filter description for the placeholder
   const getPlaceholderText = () => {
     if (currentSymbol) {
-      return `Search ${PREFIXES[currentSymbol].description}s...`;
+      return `Search ${PREFIXES[currentSymbol as PrefixType].description}s...`;
     }
     return "Search prefixes or type @, !, ?, # to filter by type...";
   };
@@ -67,30 +58,20 @@ export function PrefixSearch({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex(prev => 
+      setHighlightedIndex(prev => 
         prev < filteredPrefixes.length - 1 ? prev + 1 : prev
       );
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSelectedIndex(prev => prev > 0 ? prev - 1 : 0);
-    } else if (e.key === 'Enter' && selectedIndex >= 0) {
+      setHighlightedIndex(prev => prev > 0 ? prev - 1 : 0);
+    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
       e.preventDefault();
-      const selectedPrefix = filteredPrefixes[selectedIndex];
+      const selectedPrefix = filteredPrefixes[highlightedIndex];
       onPrefixSelect(selectedPrefix.id);
       setSearchTerm('');
-      setSelectedIndex(-1);
+      setHighlightedIndex(-1);
     }
   };
-
-  // Scroll selected item into view
-  useEffect(() => {
-    if (selectedIndex >= 0 && resultsRef.current) {
-      const selectedItem = resultsRef.current.children[selectedIndex] as HTMLElement;
-      if (selectedItem) {
-        selectedItem.scrollIntoView({ block: 'nearest' });
-      }
-    }
-  }, [selectedIndex]);
 
   return (
     <div className="relative">
@@ -121,15 +102,10 @@ export function PrefixSearch({
 
       {/* Search Input */}
       <input
-        ref={inputRef}
         type="text"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         onKeyDown={handleKeyDown}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => {
-          setTimeout(() => setIsFocused(false), 200);
-        }}
         placeholder={getPlaceholderText()}
         className="w-full p-2 text-gray-100 bg-gray-900/50 border border-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 backdrop-blur-sm font-mono"
       />
@@ -137,19 +113,18 @@ export function PrefixSearch({
       {/* Results Dropdown */}
       {filteredPrefixes.length > 0 && searchTerm && (
         <div
-          ref={resultsRef}
           className="absolute z-10 w-full mt-2 bg-gray-900 rounded-xl shadow-2xl border border-gray-800 max-h-60 overflow-y-auto"
         >
           {filteredPrefixes.map((prefix, index) => (
             <div
               key={prefix.id}
               className={`px-4 py-2 text-gray-100 hover:bg-gray-800 focus:outline-none cursor-pointer ${
-                index === selectedIndex ? 'bg-gray-800' : ''
+                index === highlightedIndex ? 'bg-gray-800' : ''
               }`}
               onClick={() => {
                 onPrefixSelect(prefix.id);
                 setSearchTerm('');
-                setSelectedIndex(-1);
+                setHighlightedIndex(-1);
               }}
             >
               <span className="text-green-500 mr-2">

@@ -1,22 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
-import { PREFIXES } from '../constants/prefixes';
-import type { PrefixType } from '../types/entry';
+import { PREFIXES, PrefixType } from '../constants/prefixes';
+import { supabase } from '../services/supabase';
+import type { PrefixType as EntryPrefixType } from '../types/entry';
 
 interface PrefixOverlayProps {
-  prefixType: PrefixType;
-  value: string;
-  onSelect: (value: string) => void;
-  onCancel: () => void;
+  currentPrefix: PrefixType;
+  onClose: () => void;
+  onPrefixSelect: (prefix: string) => void;
 }
 
-export function PrefixOverlay({ prefixType, value, onSelect, onCancel }: PrefixOverlayProps) {
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [selectedIndex, setSelectedIndex] = useState(0);
+export function PrefixOverlay({ currentPrefix, onClose, onPrefixSelect }: PrefixOverlayProps) {
+  const [prefixInput, setPrefixInput] = useState('');
+  const [suggestions, setSuggestions] = useState<{ id: string; value: string }[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const inputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
   // Find the symbol by matching the type
   const symbol = Object.entries(PREFIXES).find(
-    ([_, def]) => def.type === prefixType
+    ([_, def]) => def.type === currentPrefix
   )?.[0] || '';
 
   useEffect(() => {
@@ -26,10 +28,10 @@ export function PrefixOverlay({ prefixType, value, onSelect, onCancel }: PrefixO
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      onSelect(e.currentTarget.value);
+      onPrefixSelect(e.currentTarget.value);
     } else if (e.key === 'Escape') {
       e.preventDefault();
-      onCancel();
+      onClose();
     }
   };
 
@@ -38,7 +40,7 @@ export function PrefixOverlay({ prefixType, value, onSelect, onCancel }: PrefixO
       {/* Backdrop with blur */}
       <div 
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onCancel}
+        onClick={onClose}
       />
       
       {/* Modal content */}
@@ -59,13 +61,13 @@ export function PrefixOverlay({ prefixType, value, onSelect, onCancel }: PrefixO
           </div>
           <div className="flex justify-end gap-2 mt-4">
             <button
-              onClick={onCancel}
+              onClick={onClose}
               className="px-4 py-2 text-gray-300 hover:text-white"
             >
               Cancel
             </button>
             <button
-              onClick={() => onSelect(inputRef.current?.value || '')}
+              onClick={() => onPrefixSelect(inputRef.current?.value || '')}
               className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
             >
               Add

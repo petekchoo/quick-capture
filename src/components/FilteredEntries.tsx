@@ -38,7 +38,6 @@ export function FilteredEntries({
   const [editContent, setEditContent] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [showPrefixSuggestions, setShowPrefixSuggestions] = useState(false);
-  const [prefixInput, setPrefixInput] = useState('');
   const [prefixSuggestions, setPrefixSuggestions] = useState<{ id: string; type: string; value: string }[]>([]);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [prefixType, setPrefixType] = useState<PrefixType | null>(null);
@@ -291,21 +290,6 @@ export function FilteredEntries({
     }
   };
 
-  const handlePrefixInput = async (value: string) => {
-    setPrefixInput(value);
-    if (value.trim()) {
-      const { data: suggestions } = await supabase
-        .from('prefixes')
-        .select('id, type, value')
-        .ilike('value', `%${value}%`)
-        .limit(5);
-      setPrefixSuggestions(suggestions || []);
-    } else {
-      setPrefixSuggestions([]);
-    }
-    setHighlightedIndex(-1);
-  };
-
   const handlePrefixSelect = async (prefix: { id: string; type: string; value: string }) => {
     try {
       const { error } = await supabase
@@ -340,7 +324,6 @@ export function FilteredEntries({
         }
       }
 
-      setPrefixInput('');
       setPrefixSuggestions([]);
       setShowPrefixSuggestions(false);
       setPrefixType(null);

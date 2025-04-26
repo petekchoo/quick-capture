@@ -9,6 +9,17 @@ import { PrefixSearch } from './PrefixSearch';
 import { FilteredEntries } from './FilteredEntries';
 import { PrefixType as DatabasePrefixType } from '../types/database';
 import { PrefixTypeFilter } from './PrefixTypeFilter';
+import { PrefixOverlay } from './PrefixOverlay';
+
+interface QuickCaptureState {
+  content: string;
+  selectedPrefixType: PrefixType | null;
+  currentPrefix: string | null;
+  selectedPrefixes: string[];
+  isPrefixOverlayOpen: boolean;
+  prefixSuggestions: { value: string; id: string }[];
+  prefixInput: string;
+}
 
 interface Prefix {
   id: string;
@@ -17,18 +28,18 @@ interface Prefix {
 }
 
 export function QuickCapture() {
-  const [entryState, setEntryState] = useState<EntryState>({
+  const [entryState, setEntryState] = useState<QuickCaptureState>({
     content: '',
+    selectedPrefixType: null,
     currentPrefix: null,
     selectedPrefixes: [],
     isPrefixOverlayOpen: false,
     prefixSuggestions: [],
-    prefixInput: '',
-    selectedPrefixType: null
+    prefixInput: ''
   });
-  const [selectedPrefixIds, setSelectedPrefixIds] = useState<string[]>([]);
   const [availablePrefixes, setAvailablePrefixes] = useState<{ id: string; value: string; type: string }[]>([]);
   const [filteredPrefixes, setFilteredPrefixes] = useState<{ id: string; value: string; type: string }[]>([]);
+  const [selectedPrefixIds, setSelectedPrefixIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -50,11 +61,6 @@ export function QuickCapture() {
     }
   }, [success]);
 
-  // Clear selected prefixes when type changes
-  useEffect(() => {
-    setSelectedPrefixIds([]);
-  }, [entryState.selectedPrefixType]);
-
   // Fetch all available prefixes on component mount
   useEffect(() => {
     const fetchAvailablePrefixes = async () => {
@@ -70,14 +76,14 @@ export function QuickCapture() {
     };
 
     fetchAvailablePrefixes();
-  }, []); // Remove entryState.selectedPrefixType dependency
+  }, []);
 
   // Filter suggestions based on input
   useEffect(() => {
     if (!entryState.currentPrefix) return;
 
     const filterPrefixes = () => {
-      const searchTerm = entryState.prefixInput.toLowerCase();
+      const searchTerm = entryState.content.toLowerCase();
       const currentType = PREFIXES[entryState.currentPrefix!].description;
       
       // Filter by type and search term, then sort alphabetically
@@ -99,7 +105,7 @@ export function QuickCapture() {
     };
 
     filterPrefixes();
-  }, [entryState.prefixInput, availablePrefixes, entryState.currentPrefix]);
+  }, [entryState.content, availablePrefixes, entryState.currentPrefix]);
 
   // Handle key events in the modal
   const handleModalKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -123,7 +129,7 @@ export function QuickCapture() {
       if (highlightedIndex >= 0 && highlightedIndex < entryState.prefixSuggestions.length) {
         // If there's a highlighted suggestion, use that
         handlePrefixSelect(entryState.prefixSuggestions[highlightedIndex].value);
-      } else if (entryState.prefixInput) {
+      } else if (entryState.content) {
         // Otherwise, use the input text
         handlePrefixSubmit();
       } else {
