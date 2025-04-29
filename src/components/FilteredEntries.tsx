@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Entry, Prefix } from '../types/database';
+import { Entry } from '../types/database';
 import { PrefixType } from '../constants/prefixes';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { LoadingSpinner } from './LoadingSpinner';
 import { EntryCard } from './EntryCard';
 
 interface FilteredEntriesProps {
-  onPrefixSelect: (prefixId: string) => void;
-  onPrefixRemove: (prefixId: string) => void;
   onEntriesCountChange: (count: number) => void;
   selectedPrefixType: PrefixType | null;
   selectedPrefixIds: string[];
@@ -17,8 +15,6 @@ interface FilteredEntriesProps {
 }
 
 export function FilteredEntries({ 
-  onPrefixSelect, 
-  onPrefixRemove,
   onEntriesCountChange,
   selectedPrefixType: propSelectedPrefixType,
   selectedPrefixIds: propSelectedPrefixIds,
@@ -61,16 +57,6 @@ export function FilteredEntries({
       fetchEntries();
     }
   }, [refreshTrigger]);
-
-  /*
-  const handlePrefixSelect = (prefix: Prefix) => {
-    onPrefixSelect(prefix.id);
-  };
-
-  const handlePrefixRemove = (prefixId: string) => {
-    onPrefixRemove(prefixId);
-  };
-  */
 
   const handleEntryDelete = () => {
     fetchEntries();

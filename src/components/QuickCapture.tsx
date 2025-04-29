@@ -48,8 +48,6 @@ export function QuickCapture() {
   const [entriesCount, setEntriesCount] = useState(0);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const resultsRef = useRef<HTMLDivElement>(null);
 
   // Clear success message after 5 seconds
   useEffect(() => {
@@ -124,14 +122,6 @@ export function QuickCapture() {
         content: value.slice(0, -1)
       }));
     }
-  };
-
-  const handlePrefixInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEntryState(prev => ({
-      ...prev,
-      prefixInput: e.target.value
-    }));
-    setHighlightedIndex(-1);
   };
 
   const handlePrefixSelect = (prefixId: string) => {

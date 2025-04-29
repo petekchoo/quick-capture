@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
-import { Entry as DatabaseEntry, Prefix, PrefixType } from '../types/database';
+import { Entry as DatabaseEntry, Prefix } from '../types/database';
+import { PrefixType } from '../constants/prefixes';
 
 export interface Entry extends DatabaseEntry {
   entry_prefixes: {

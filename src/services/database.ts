@@ -4,7 +4,7 @@ import { PrefixType } from '../constants/prefixes';
 import { handleError, DatabaseError } from '../utils/errors';
 
 type Tables = Database['public']['Tables'];
-type Row<T extends keyof Tables> = Tables[T]['Row'];
+//type Row<T extends keyof Tables> = Tables[T]['Row'];
 type Insert<T extends keyof Tables> = Tables[T]['Insert'];
 type Update<T extends keyof Tables> = Tables[T]['Update'];
 
