@@ -15,8 +15,8 @@ export function PrefixTypeFilter({ selectedType, onTypeChange, disabled = false 
   };
 
   return (
-    <div className="flex items-center gap-2 p-2 bg-gray-900/50 rounded-xl border border-gray-800 backdrop-blur-sm overflow-x-auto whitespace-nowrap">
-      <div className="flex items-center gap-1 shrink-0">
+    <div className="flex items-center gap-1.5 p-1.5 bg-gray-900/50 rounded-xl border border-gray-800 backdrop-blur-sm">
+      <div className="flex items-center">
         <input
           type="radio"
           name="prefixType"
@@ -29,7 +29,7 @@ export function PrefixTypeFilter({ selectedType, onTypeChange, disabled = false 
         />
         <label
           htmlFor="no-filter"
-          className={`px-3 py-1 rounded-lg cursor-pointer transition-colors ${
+          className={`px-2 py-0.5 rounded-lg cursor-pointer transition-colors text-sm ${
             selectedType === null
               ? 'bg-gray-800 text-gray-100'
               : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
@@ -39,7 +39,7 @@ export function PrefixTypeFilter({ selectedType, onTypeChange, disabled = false 
         </label>
       </div>
       {Object.entries(PREFIXES).map(([type, { symbol, description }]) => (
-        <div key={type} className="flex items-center gap-1 shrink-0">
+        <div key={type} className="flex items-center">
           <input
             type="radio"
             name="prefixType"
@@ -52,14 +52,14 @@ export function PrefixTypeFilter({ selectedType, onTypeChange, disabled = false 
           />
           <label
             htmlFor={`filter-${type}`}
-            className={`px-3 py-1 rounded-lg cursor-pointer transition-colors ${
+            className={`px-2 py-0.5 rounded-lg cursor-pointer transition-colors text-sm ${
               selectedType === SYMBOL_TO_TYPE[symbol as keyof typeof SYMBOL_TO_TYPE]
                 ? 'bg-gray-800 text-gray-100'
                 : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
             } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            <span className="text-green-500 mr-1">{symbol}</span>
-            {description}
+            <span className="text-green-500">{symbol}</span>
+            <span className="ml-0.5">{description}</span>
           </label>
         </div>
       ))}
