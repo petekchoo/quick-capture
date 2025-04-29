@@ -15,9 +15,6 @@ export function PrefixOverlay({ currentPrefix, onClose, onPrefixSelect }: Prefix
   const inputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  // Find the symbol by matching the type
-  const symbol = PREFIXES[currentPrefix].symbol;
-
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
