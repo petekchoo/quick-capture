@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
-import { PREFIXES, PrefixType, SYMBOL_TO_TYPE } from '../constants/prefixes';
+import { PrefixType, SYMBOL_TO_TYPE } from '../constants/prefixes';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 interface PrefixSearchProps {
-  onPrefixSelect: (prefixId: string) => void;
-  onPrefixRemove: (prefixId: string) => void;
   onPrefixSymbol: (symbol: string) => void;
   selectedPrefixIds?: string[];
   typeFilter?: PrefixType | null;
@@ -19,24 +17,18 @@ interface AvailablePrefix {
 }
 
 export function PrefixSearch({ 
-  onPrefixSelect, 
-  onPrefixRemove,
   onPrefixSymbol,
   selectedPrefixIds = [],
   typeFilter = null
 }: PrefixSearchProps) {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [availablePrefixes, setAvailablePrefixes] = useState<AvailablePrefix[]>([]);
-  const [loading, setLoading] = useState(false);
 
-  // Fetch available prefixes when filters change
   useEffect(() => {
     const fetchPrefixes = async () => {
       if (!user) return;
       
-      setLoading(true);
       try {
         const { data: prefixes, error } = await supabase
           .rpc('get_available_prefixes', {
@@ -54,8 +46,6 @@ export function PrefixSearch({
         setAvailablePrefixes(prefixes || []);
       } catch (err) {
         console.error('Error fetching prefixes:', err);
-      } finally {
-        setLoading(false);
       }
     };
 

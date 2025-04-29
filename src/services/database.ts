@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
-import { Database, Entry, Prefix, PrefixType } from '../types/database';
-import { handleError, DatabaseError, ValidationError, NotFoundError } from '../utils/errors';
+import { Database } from '../types/database';
+import { PrefixType } from '../constants/prefixes';
+import { handleError, DatabaseError } from '../utils/errors';
 
 type Tables = Database['public']['Tables'];
 type Row<T extends keyof Tables> = Tables[T]['Row'];

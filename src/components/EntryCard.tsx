@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Entry } from '../types/database';
 import { TYPE_TO_SYMBOL } from '../constants/prefixes';
 import { EntryService } from '../services/entryService';

@@ -62,6 +62,7 @@ export function FilteredEntries({
     }
   }, [refreshTrigger]);
 
+  /*
   const handlePrefixSelect = (prefix: Prefix) => {
     onPrefixSelect(prefix.id);
   };
@@ -69,6 +70,7 @@ export function FilteredEntries({
   const handlePrefixRemove = (prefixId: string) => {
     onPrefixRemove(prefixId);
   };
+  */
 
   const handleEntryDelete = () => {
     fetchEntries();

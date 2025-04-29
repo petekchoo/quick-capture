@@ -1,4 +1,4 @@
-import { PrefixType, PrefixSymbol } from '../constants/prefixes';
+import { PrefixType } from '../constants/prefixes';
 
 export interface Entry {
   id: string;

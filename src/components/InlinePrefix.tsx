@@ -1,5 +1,4 @@
-import { PrefixType } from '../types/database';
-import { PREFIXES } from '../constants/prefixes';
+import { PrefixType, PREFIXES } from '../constants/prefixes';
 
 interface InlinePrefixProps {
   type: PrefixType;

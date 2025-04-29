@@ -33,11 +33,6 @@ export function PrefixSearchModal({
   const inputRef = useRef<HTMLInputElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
-  // Find the symbol by matching the type
-  const symbol = Object.entries(PREFIXES).find(
-    ([_, def]) => def.description === currentPrefix
-  )?.[0] || '';
-
   useEffect(() => {
     inputRef.current?.focus();
   }, []);

@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { EntryService } from '../services/entryService';
 import { parseEntry } from '../utils/entryParser';
-import { PREFIXES, SYMBOL_TO_TYPE, TYPE_TO_SYMBOL, PrefixType } from '../constants/prefixes';
+import { PREFIXES, SYMBOL_TO_TYPE, PrefixType } from '../constants/prefixes';
 import './QuickCapture.css';
 import { FilteredEntries } from './FilteredEntries';
 import { PrefixTypeFilter } from './PrefixTypeFilter';
 import { PrefixOverlay } from './PrefixOverlay';
 import { PrefixSearch } from './PrefixSearch';
-import { Prefix } from '../types/database';
+//import { Prefix } from '../types/database';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { PrefixSearchModal } from './PrefixSearchModal';
@@ -39,11 +39,11 @@ export function QuickCapture() {
     showPrefixModal: false
   });
   const [filterPrefixIds, setFilterPrefixIds] = useState<string[]>([]);
-  const [overlayPrefixIds, setOverlayPrefixIds] = useState<string[]>([]);
+  //const [overlayPrefixIds, setOverlayPrefixIds] = useState<string[]>([]);
   const [overlayPrefixes, setOverlayPrefixes] = useState<{ id: string; value: string; type: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [setHighlightedIndex] = useState(-1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [entriesCount, setEntriesCount] = useState(0);
   const [refreshTrigger, setRefreshTrigger] = useState(0);

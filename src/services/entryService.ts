@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import type { Database } from '../types/database';
-import type { PrefixType } from '../types/database';
+//import type { PrefixType } from '../types/database';
 import { getPrefixType, isValidPrefix, PREFIXES } from '../constants/prefixes';
 
 type Entry = Database['public']['Tables']['entries']['Row'];

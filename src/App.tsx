@@ -1,6 +1,6 @@
 import { QuickCapture } from './components/QuickCapture';
 import { Auth } from './components/Auth';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { supabase } from './services/supabase';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 

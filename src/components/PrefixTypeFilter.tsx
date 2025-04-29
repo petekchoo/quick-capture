@@ -1,5 +1,5 @@
 import React from 'react';
-import { PREFIXES, SYMBOL_TO_TYPE, TYPE_TO_SYMBOL, PrefixType } from '../constants/prefixes';
+import { PREFIXES, SYMBOL_TO_TYPE, PrefixType } from '../constants/prefixes';
 
 interface PrefixTypeFilterProps {
   selectedType: PrefixType | null;

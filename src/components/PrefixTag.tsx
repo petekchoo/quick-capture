@@ -1,16 +1,14 @@
-import React from 'react';
-import { TYPE_TO_SYMBOL } from '../constants/prefixes';
-import { PrefixType } from '../types/database';
+//import React from 'react';
+import { TYPE_TO_SYMBOL, PrefixType } from '../constants/prefixes';
 
 interface PrefixTagProps {
-  id: string;
   type: PrefixType;
   value: string;
   onRemove?: () => void;
   inline?: boolean;
 }
 
-export function PrefixTag({ id, type, value, onRemove, inline = false }: PrefixTagProps) {
+export function PrefixTag({ type, value, onRemove, inline = false }: PrefixTagProps) {
   const className = inline 
     ? 'inline-flex items-center gap-1 px-2 py-1 text-sm bg-gray-800 rounded-full text-gray-300'
     : 'prefix-tag';
