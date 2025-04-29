@@ -43,7 +43,6 @@ export function QuickCapture() {
   const [overlayPrefixes, setOverlayPrefixes] = useState<{ id: string; value: string; type: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [setHighlightedIndex] = useState(-1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [entriesCount, setEntriesCount] = useState(0);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -142,7 +141,6 @@ export function QuickCapture() {
     
     // Check if this is a new prefix (string) or existing prefix (ID)
     let prefixValue: string;
-    let prefixIdToUse: string;
 
     if (typeof prefixId === 'string' && !prefixId.includes('-')) {
       // This is a new prefix value
@@ -163,14 +161,11 @@ export function QuickCapture() {
         console.error('Failed to create prefix:', error);
         return;
       }
-
-      prefixIdToUse = newPrefix.id;
     } else {
       // This is an existing prefix ID
       const selectedPrefix = overlayPrefixes.find(p => p.id === prefixId);
       if (!selectedPrefix) return;
       prefixValue = selectedPrefix.value;
-      prefixIdToUse = prefixId;
     }
 
     // Get the symbol for the current prefix type
@@ -323,8 +318,6 @@ export function QuickCapture() {
 
       <div className="space-y-2">
         <PrefixSearch
-          onPrefixSelect={handlePrefixSelect}
-          onPrefixRemove={handlePrefixRemove}
           selectedPrefixIds={filterPrefixIds}
           typeFilter={entryState.selectedPrefixType}
           onPrefixSymbol={handlePrefixSymbol}
@@ -366,8 +359,6 @@ export function QuickCapture() {
         <div className="flex-1 min-h-0 overflow-y-auto">
           <ErrorBoundary>
             <FilteredEntries
-              onPrefixSelect={handlePrefixSelect}
-              onPrefixRemove={handlePrefixRemove}
               onEntriesCountChange={setEntriesCount}
               selectedPrefixType={entryState.selectedPrefixType}
               selectedPrefixIds={filterPrefixIds.map(prefixId => {
