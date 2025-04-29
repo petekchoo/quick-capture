@@ -147,15 +147,13 @@ export function QuickCapture() {
       prefixValue = prefixId;
       
       // Create the new prefix
-      const { data: newPrefix, error } = await supabase
+      const { error } = await supabase
         .from('prefixes')
         .insert({
           value: prefixValue,
           type: PREFIXES[entryState.currentPrefix].description,
           user_id: user?.id
-        })
-        .select('id')
-        .single();
+        });
 
       if (error) {
         console.error('Failed to create prefix:', error);

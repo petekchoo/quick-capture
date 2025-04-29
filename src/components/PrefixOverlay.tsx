@@ -84,7 +84,6 @@ export function PrefixOverlay({ currentPrefix, onClose, onPrefixSelect }: Prefix
             Add {PREFIXES[currentPrefix].description}
           </h3>
           <div className="flex items-center gap-2">
-            <span className="text-gray-300 text-lg">{symbol}</span>
             <input
               ref={inputRef}
               type="text"
