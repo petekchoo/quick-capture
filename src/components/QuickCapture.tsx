@@ -1,46 +1,46 @@
 import { useState, useRef, useEffect } from 'react';
 import { EntryService } from '../services/entryService';
 import { parseEntry } from '../utils/entryParser';
-import { supabase } from '../services/supabase';
-import { EntryState, PrefixType } from '../types/entry';
-import { PREFIXES } from '../constants/prefixes';
+import { PREFIXES, SYMBOL_TO_TYPE, TYPE_TO_SYMBOL, PrefixType } from '../constants/prefixes';
 import './QuickCapture.css';
-import { PrefixSearch } from './PrefixSearch';
 import { FilteredEntries } from './FilteredEntries';
-import { PrefixType as DatabasePrefixType } from '../types/database';
 import { PrefixTypeFilter } from './PrefixTypeFilter';
 import { PrefixOverlay } from './PrefixOverlay';
+import { PrefixSearch } from './PrefixSearch';
+import { Prefix } from '../types/database';
+import { supabase } from '../services/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import { PrefixSearchModal } from './PrefixSearchModal';
+import { ErrorBoundary } from './ErrorBoundary';
 
 interface QuickCaptureState {
   content: string;
   selectedPrefixType: PrefixType | null;
-  currentPrefix: string | null;
-  selectedPrefixes: string[];
+  currentPrefix: PrefixType | null;
   isPrefixOverlayOpen: boolean;
   prefixSuggestions: { value: string; id: string }[];
   prefixInput: string;
-}
-
-interface Prefix {
-  id: string;
-  type: PrefixType;
-  value: string;
+  selectedPrefixes: PrefixType[];
+  typeFilter: PrefixType | null;
+  showPrefixModal: boolean;
 }
 
 export function QuickCapture() {
+  const { user } = useAuth();
   const [entryState, setEntryState] = useState<QuickCaptureState>({
     content: '',
     selectedPrefixType: null,
     currentPrefix: null,
-    selectedPrefixes: [],
     isPrefixOverlayOpen: false,
     prefixSuggestions: [],
-    prefixInput: ''
+    prefixInput: '',
+    selectedPrefixes: [],
+    typeFilter: null,
+    showPrefixModal: false
   });
-  const [availablePrefixes, setAvailablePrefixes] = useState<{ id: string; value: string; type: string }[]>([]);
-  const [filteredPrefixes, setFilteredPrefixes] = useState<{ id: string; value: string; type: string }[]>([]);
-  const [selectedPrefixIds, setSelectedPrefixIds] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [filterPrefixIds, setFilterPrefixIds] = useState<string[]>([]);
+  const [overlayPrefixIds, setOverlayPrefixIds] = useState<string[]>([]);
+  const [overlayPrefixes, setOverlayPrefixes] = useState<{ id: string; value: string; type: string }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -65,13 +65,10 @@ export function QuickCapture() {
   useEffect(() => {
     const fetchAvailablePrefixes = async () => {
       try {
-        setIsLoading(true);
         const prefixes = await EntryService.getAvailablePrefixes();
-        setAvailablePrefixes(prefixes);
+        setOverlayPrefixes(prefixes);
       } catch (err) {
         setError('Failed to fetch prefixes');
-      } finally {
-        setIsLoading(false);
       }
     };
 
@@ -83,11 +80,11 @@ export function QuickCapture() {
     if (!entryState.currentPrefix) return;
 
     const filterPrefixes = () => {
-      const searchTerm = entryState.content.toLowerCase();
+      const searchTerm = entryState.prefixInput.toLowerCase();
       const currentType = PREFIXES[entryState.currentPrefix!].description;
       
       // Filter by type and search term, then sort alphabetically
-      const filtered = availablePrefixes
+      const filtered = overlayPrefixes
         .filter(prefix => 
           prefix.type === currentType && 
           prefix.value.toLowerCase().includes(searchTerm)
@@ -105,102 +102,26 @@ export function QuickCapture() {
     };
 
     filterPrefixes();
-  }, [entryState.content, availablePrefixes, entryState.currentPrefix]);
-
-  // Handle key events in the modal
-  const handleModalKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Escape') {
-      setEntryState(prev => ({
-        ...prev,
-        isPrefixOverlayOpen: false,
-        currentPrefix: null,
-        prefixInput: '',
-        prefixSuggestions: []
-      }));
-      // Restore focus to textarea after modal closes
-      setTimeout(() => {
-        textareaRef.current?.focus();
-      }, 0);
-      return;
-    }
-
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (highlightedIndex >= 0 && highlightedIndex < entryState.prefixSuggestions.length) {
-        // If there's a highlighted suggestion, use that
-        handlePrefixSelect(entryState.prefixSuggestions[highlightedIndex].value);
-      } else if (entryState.content) {
-        // Otherwise, use the input text
-        handlePrefixSubmit();
-      } else {
-        // If no input and no selection, close the modal
-        setEntryState(prev => ({
-          ...prev,
-          isPrefixOverlayOpen: false,
-          currentPrefix: null,
-          prefixInput: '',
-          prefixSuggestions: []
-        }));
-      }
-      return;
-    }
-
-    if (!entryState.prefixSuggestions.length) return;
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setHighlightedIndex(prev => 
-          prev < entryState.prefixSuggestions.length - 1 ? prev + 1 : prev
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setHighlightedIndex(prev => 
-          prev > 0 ? prev - 1 : prev
-        );
-        break;
-    }
-  };
-
-  const handleModalClickOutside = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Only close if clicking directly on the backdrop
-    if (e.target === e.currentTarget) {
-      setEntryState(prev => ({
-        ...prev,
-        isPrefixOverlayOpen: false,
-        currentPrefix: null,
-        prefixInput: '',
-        prefixSuggestions: []
-      }));
-      setTimeout(() => {
-        textareaRef.current?.focus();
-      }, 0);
-    }
-  };
-
-  // Scroll highlighted item into view
-  useEffect(() => {
-    if (highlightedIndex >= 0 && resultsRef.current) {
-      const highlightedItem = resultsRef.current.children[highlightedIndex] as HTMLElement;
-      if (highlightedItem) {
-        highlightedItem.scrollIntoView({ block: 'nearest' });
-      }
-    }
-  }, [highlightedIndex]);
+  }, [entryState.prefixInput, overlayPrefixes, entryState.currentPrefix]);
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setEntryState(prev => ({ ...prev, content: value }));
 
-    // Check for prefix trigger
+    // Get the last character of the text
     const lastChar = value[value.length - 1];
-    if (Object.keys(PREFIXES).includes(lastChar)) {
+    
+    // If it's a prefix symbol, open the overlay and remove the symbol
+    if (['@', '!', '?', '#'].includes(lastChar)) {
+      // Convert symbol to type using SYMBOL_TO_TYPE
+      const prefixType = SYMBOL_TO_TYPE[lastChar as keyof typeof SYMBOL_TO_TYPE];
       setEntryState(prev => ({
         ...prev,
-        currentPrefix: lastChar as PrefixType,
+        currentPrefix: prefixType,
         isPrefixOverlayOpen: true,
-        prefixInput: ''
+        prefixInput: '',
+        // Remove the last character (the symbol) from the content
+        content: value.slice(0, -1)
       }));
     }
   };
@@ -213,28 +134,96 @@ export function QuickCapture() {
     setHighlightedIndex(-1);
   };
 
-  const handlePrefixSelect = (prefix: string) => {
-    // Remove the trigger symbol from the content
-    const contentWithoutTrigger = entryState.content.slice(0, -1);
-    const prefixText = `[${entryState.currentPrefix}${prefix}]`;
+  const handlePrefixSelect = (prefixId: string) => {
+    // Add the prefix to the filter list
+    setFilterPrefixIds(prev => [...prev, prefixId]);
+    setRefreshTrigger(prev => prev + 1);
+    
+    // Close the modal and reset state
+    setEntryState(prev => ({
+      ...prev,
+      showPrefixModal: false,
+      currentPrefix: null
+    }));
+  };
+
+  const handleOverlayPrefixSelect = async (prefixId: string) => {
+    if (!entryState.currentPrefix) return;
+    
+    // Check if this is a new prefix (string) or existing prefix (ID)
+    let prefixValue: string;
+    let prefixIdToUse: string;
+
+    if (typeof prefixId === 'string' && !prefixId.includes('-')) {
+      // This is a new prefix value
+      prefixValue = prefixId;
+      
+      // Create the new prefix
+      const { data: newPrefix, error } = await supabase
+        .from('prefixes')
+        .insert({
+          value: prefixValue,
+          type: PREFIXES[entryState.currentPrefix].description,
+          user_id: user?.id
+        })
+        .select('id')
+        .single();
+
+      if (error) {
+        console.error('Failed to create prefix:', error);
+        return;
+      }
+
+      prefixIdToUse = newPrefix.id;
+    } else {
+      // This is an existing prefix ID
+      const selectedPrefix = overlayPrefixes.find(p => p.id === prefixId);
+      if (!selectedPrefix) return;
+      prefixValue = selectedPrefix.value;
+      prefixIdToUse = prefixId;
+    }
+
+    // Get the symbol for the current prefix type
+    const symbol = PREFIXES[entryState.currentPrefix].symbol;
+    
+    // Add the prefix to the content in the format [symbolprefixtext]
+    const newContent = entryState.content + `[${symbol}${prefixValue}]`;
     
     setEntryState(prev => ({
       ...prev,
-      content: contentWithoutTrigger + prefixText,
+      content: newContent,
       isPrefixOverlayOpen: false,
       currentPrefix: null,
       prefixInput: '',
-      prefixSuggestions: [],
-      selectedPrefixes: [...prev.selectedPrefixes, prefix]
+      prefixSuggestions: []
     }));
+
+    // Set focus and cursor position after state update
     setTimeout(() => {
-      textareaRef.current?.focus();
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        // Set cursor position to the end of the new content
+        textareaRef.current.setSelectionRange(newContent.length, newContent.length);
+      }
     }, 0);
   };
 
-  const handlePrefixSubmit = () => {
-    if (entryState.prefixInput) {
-      handlePrefixSelect(entryState.prefixInput);
+  const handlePrefixRemove = (prefixId: string) => {
+    setFilterPrefixIds(prev => prev.filter(id => id !== prefixId));
+    setRefreshTrigger(prev => prev + 1);
+  };
+
+  const handlePrefixSymbol = (symbol: string) => {
+    // Convert symbol to prefix type using SYMBOL_TO_TYPE
+    const prefixType = SYMBOL_TO_TYPE[symbol as keyof typeof SYMBOL_TO_TYPE];
+    
+    if (prefixType) {
+      setEntryState(prev => ({
+        ...prev,
+        currentPrefix: prefixType,
+        prefixInput: '',
+        showPrefixModal: true
+      }));
     }
   };
 
@@ -271,9 +260,19 @@ export function QuickCapture() {
     }
   };
 
+  const handleTypeSelect = (type: PrefixType | null) => {
+    setEntryState(prev => ({
+      ...prev,
+      selectedPrefixType: type,
+      typeFilter: type
+    }));
+    setFilterPrefixIds([]);
+    setRefreshTrigger(prev => prev + 1);
+  };
+
   return (
-    <div className="space-y-6 h-[calc(100vh-4rem)] flex flex-col">
-      <div className="relative flex-1">
+    <div className="space-y-4 h-[calc(100vh-4rem)] flex flex-col">
+      <div className="relative h-[30%] min-h-[200px]">
         <textarea
           ref={textareaRef}
           value={entryState.content}
@@ -282,74 +281,23 @@ export function QuickCapture() {
           className="w-full h-full p-4 text-base leading-relaxed border border-gray-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none bg-black/50 backdrop-blur-sm text-gray-100 font-mono whitespace-pre-wrap text-[16px]"
           placeholder="Type your entry here..."
         />
-        {entryState.isPrefixOverlayOpen && (
-          <div 
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
-            onClick={handleModalClickOutside}
-          >
-            <div className="w-full max-w-md bg-gray-900 border border-gray-800 rounded-lg shadow-lg p-4">
-              <div className="mb-4">
-                <h3 className="text-lg font-medium text-gray-100 mb-2">
-                  Add {PREFIXES[entryState.currentPrefix!].description}
-                </h3>
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={entryState.prefixInput}
-                  onChange={handlePrefixInputChange}
-                  onKeyDown={handleModalKeyDown}
-                  placeholder={`Search or create ${PREFIXES[entryState.currentPrefix!].description}...`}
-                  className="w-full p-2 bg-gray-800 text-gray-100 rounded border border-gray-700 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none"
-                  autoFocus
-                />
-              </div>
-              {entryState.prefixSuggestions.length > 0 && (
-                <div 
-                  ref={resultsRef}
-                  className="mb-4 max-h-48 overflow-y-auto"
-                >
-                  {entryState.prefixSuggestions.map((suggestion, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handlePrefixSelect(suggestion.value)}
-                      className={`w-full p-2 text-left text-gray-100 hover:bg-gray-800 rounded ${
-                        index === highlightedIndex ? 'bg-gray-800' : ''
-                      }`}
-                    >
-                      {suggestion.value}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <div className="flex justify-end gap-2">
-                <button
-                  onClick={() => {
-                    setEntryState(prev => ({ 
-                      ...prev, 
-                      isPrefixOverlayOpen: false, 
-                      currentPrefix: null,
-                      prefixInput: '',
-                      prefixSuggestions: []
-                    }));
-                    setTimeout(() => {
-                      textareaRef.current?.focus();
-                    }, 0);
-                  }}
-                  className="px-4 py-2 text-gray-300 hover:text-gray-100"
-                >
-                  Cancel
-                </button>
-                {entryState.prefixInput && entryState.prefixSuggestions.length === 0 && (
-                  <button
-                    onClick={handlePrefixSubmit}
-                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-                  >
-                    Create
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+        {entryState.isPrefixOverlayOpen && entryState.currentPrefix && (
+          <PrefixOverlay
+            currentPrefix={entryState.currentPrefix}
+            onClose={() => {
+              setEntryState(prev => ({
+                ...prev,
+                isPrefixOverlayOpen: false,
+                currentPrefix: null,
+                prefixInput: '',
+                prefixSuggestions: []
+              }));
+              setTimeout(() => {
+                textareaRef.current?.focus();
+              }, 0);
+            }}
+            onPrefixSelect={handleOverlayPrefixSelect}
+          />
         )}
         <div className="absolute bottom-4 right-4 flex items-center gap-2">
           <span className="text-xs text-gray-500 bg-black/80 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-sm font-mono">
@@ -380,43 +328,83 @@ export function QuickCapture() {
 
       <PrefixTypeFilter
         selectedType={entryState.selectedPrefixType}
-        onTypeSelect={(type) => {
-          setEntryState(prev => ({ ...prev, selectedPrefixType: type }));
-          setSelectedPrefixIds([]); // Clear selected prefixes when type changes
-        }}
+        onTypeChange={handleTypeSelect}
       />
 
-      <div className="flex-1 min-h-0 flex flex-col">
-        <div className="mb-4">
-          <h3 className="text-sm font-medium text-gray-400 mb-2">Search by tag</h3>
-          <div className="relative">
-            <PrefixSearch
-              availablePrefixes={filteredPrefixes}
-              selectedPrefixIds={selectedPrefixIds}
-              onPrefixSelect={(prefixId) => {
-                setSelectedPrefixIds(prev => [...prev, prefixId]);
-              }}
-              onPrefixRemove={(prefixId) => {
-                setSelectedPrefixIds(prev => prev.filter(id => id !== prefixId));
-              }}
-              currentSymbol={entryState.currentPrefix}
-            />
+      <div className="space-y-2">
+        <PrefixSearch
+          onPrefixSelect={handlePrefixSelect}
+          onPrefixRemove={handlePrefixRemove}
+          selectedPrefixIds={filterPrefixIds}
+          typeFilter={entryState.selectedPrefixType}
+          onPrefixSymbol={handlePrefixSymbol}
+        />
+        
+        {/* Selected prefix tags */}
+        {filterPrefixIds.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {filterPrefixIds.map(prefixId => {
+              const prefix = overlayPrefixes.find(p => p.id === prefixId);
+              if (!prefix) return null;
+              return (
+                <div
+                  key={prefixId}
+                  className="flex items-center gap-1 px-2 py-1 bg-gray-800 rounded text-gray-100 text-sm"
+                >
+                  <span className="text-green-500">
+                    {PREFIXES[prefix.type as PrefixType]?.symbol}
+                  </span>
+                  <span>{prefix.value}</span>
+                  <button
+                    onClick={() => handlePrefixRemove(prefixId)}
+                    className="text-gray-400 hover:text-gray-100"
+                  >
+                    ×
+                  </button>
+                </div>
+              );
+            })}
           </div>
-        </div>
-        <div className="mb-4 text-sm text-gray-400 font-mono">
+        )}
+      </div>
+
+      <div className="flex-1 min-h-0 flex flex-col">
+        <div className="mb-2 text-sm text-gray-400 font-mono">
           {entriesCount} {entriesCount === 1 ? 'entry' : 'entries'} returned
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto">
-          <FilteredEntries
-            selectedPrefixIds={selectedPrefixIds}
-            selectedPrefixType={entryState.selectedPrefixType}
-            onEntriesCountChange={setEntriesCount}
-            onAvailablePrefixesChange={setFilteredPrefixes}
-            refreshTrigger={refreshTrigger}
-          />
+          <ErrorBoundary>
+            <FilteredEntries
+              onPrefixSelect={handlePrefixSelect}
+              onPrefixRemove={handlePrefixRemove}
+              onEntriesCountChange={setEntriesCount}
+              selectedPrefixType={entryState.selectedPrefixType}
+              selectedPrefixIds={filterPrefixIds.map(prefixId => {
+                const prefix = overlayPrefixes.find(p => p.id === prefixId);
+                return prefix ? prefix.value : '';
+              }).filter(Boolean)}
+              refreshTrigger={refreshTrigger}
+            />
+          </ErrorBoundary>
         </div>
       </div>
+
+      {entryState.showPrefixModal && entryState.currentPrefix && (
+        <PrefixSearchModal
+          currentPrefix={entryState.currentPrefix}
+          onClose={() => {
+            setEntryState(prev => ({
+              ...prev,
+              showPrefixModal: false,
+              currentPrefix: null
+            }));
+          }}
+          onPrefixSelect={handlePrefixSelect}
+          selectedPrefixIds={filterPrefixIds}
+          typeFilter={entryState.selectedPrefixType}
+        />
+      )}
     </div>
   );
 } 

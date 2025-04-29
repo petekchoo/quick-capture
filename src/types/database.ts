@@ -1,4 +1,4 @@
-export type PrefixType = 'person' | 'action' | 'idea' | 'tag';
+import { PrefixType, PrefixSymbol } from '../constants/prefixes';
 
 export interface Entry {
   id: string;
@@ -6,6 +6,14 @@ export interface Entry {
   created_at: string;
   updated_at: string;
   user_id: string;
+  prefix_ids: string[];
+  entry_prefixes: {
+    prefix: {
+      id: string;
+      type: PrefixType;
+      value: string;
+    };
+  }[];
 }
 
 export interface Prefix {
@@ -14,6 +22,7 @@ export interface Prefix {
   value: string;
   user_id: string;
   created_at: string;
+  updated_at: string;
 }
 
 export interface EntryPrefix {
@@ -35,6 +44,20 @@ export interface EntryMetadata {
   context: string | null;
 }
 
+export interface User {
+  id: string;
+  email: string;
+  default_prefix_type: PrefixType | null;
+}
+
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
 export interface Database {
   public: {
     Tables: {
@@ -45,8 +68,8 @@ export interface Database {
       };
       prefixes: {
         Row: Prefix;
-        Insert: Omit<Prefix, 'id' | 'created_at'>;
-        Update: Partial<Omit<Prefix, 'id' | 'created_at'>>;
+        Insert: Omit<Prefix, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Prefix, 'id' | 'created_at' | 'updated_at'>>;
       };
       entry_prefixes: {
         Row: EntryPrefix;
@@ -64,5 +87,14 @@ export interface Database {
         Update: Partial<Omit<EntryMetadata, 'id'>>;
       };
     };
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
   };
 } 

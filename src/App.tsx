@@ -2,6 +2,7 @@ import { QuickCapture } from './components/QuickCapture';
 import { Auth } from './components/Auth';
 import { useEffect, useState } from 'react';
 import { supabase } from './services/supabase';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 function PrefixGuide() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -66,24 +67,10 @@ function PrefixGuide() {
   );
 }
 
-function App() {
-  const [session, setSession] = useState<boolean | null>(null);
+function AppContent() {
+  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(!!session);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(!!session);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  if (session === null) {
+  if (loading) {
     return (
       <div className="min-h-screen w-full bg-gradient-to-b from-black to-gray-950 flex items-center justify-center">
         <div className="text-gray-400 font-mono">Loading...</div>
@@ -91,7 +78,7 @@ function App() {
     );
   }
 
-  if (!session) {
+  if (!user) {
     return (
       <div className="min-h-screen w-full bg-gradient-to-b from-black to-gray-950 flex items-center justify-center p-6">
         <Auth />
@@ -121,6 +108,14 @@ function App() {
         </div>
       </main>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

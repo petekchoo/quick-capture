@@ -197,12 +197,21 @@ export class EntryService {
   }
 
   static async deleteEntry(entryId: string) {
-    const { error } = await supabase
+    // First delete all associated entry_prefixes
+    const { error: deletePrefixesError } = await supabase
+      .from('entry_prefixes')
+      .delete()
+      .eq('entry_id', entryId);
+
+    if (deletePrefixesError) throw deletePrefixesError;
+
+    // Then delete the entry itself
+    const { error: deleteEntryError } = await supabase
       .from('entries')
       .delete()
       .eq('id', entryId);
 
-    if (error) throw error;
+    if (deleteEntryError) throw deleteEntryError;
   }
 
   async getPrefixesByType(userId: string, type: string): Promise<{ id: string; value: string }[]> {
@@ -246,5 +255,26 @@ export class EntryService {
     if (error) throw error;
 
     return data || [];
+  }
+
+  static async updateEntry(entryId: string, content: string, prefixIdsToRemove: string[] = []) {
+    // First remove any prefixes that need to be removed
+    if (prefixIdsToRemove.length > 0) {
+      const { error: deletePrefixesError } = await supabase
+        .from('entry_prefixes')
+        .delete()
+        .eq('entry_id', entryId)
+        .in('prefix_id', prefixIdsToRemove);
+
+      if (deletePrefixesError) throw deletePrefixesError;
+    }
+
+    // Then update the entry content
+    const { error: updateError } = await supabase
+      .from('entries')
+      .update({ content })
+      .eq('id', entryId);
+
+    if (updateError) throw updateError;
   }
 } 

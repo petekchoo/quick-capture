@@ -1,38 +1,67 @@
-import { PREFIXES, PrefixType } from '../constants/prefixes';
+import React from 'react';
+import { PREFIXES, SYMBOL_TO_TYPE, TYPE_TO_SYMBOL, PrefixType } from '../constants/prefixes';
 
 interface PrefixTypeFilterProps {
   selectedType: PrefixType | null;
-  onTypeSelect: (type: PrefixType | null) => void;
+  onTypeChange?: (type: PrefixType | null) => void;
+  disabled?: boolean;
 }
 
-export function PrefixTypeFilter({ selectedType, onTypeSelect }: PrefixTypeFilterProps) {
+export function PrefixTypeFilter({ selectedType, onTypeChange, disabled = false }: PrefixTypeFilterProps) {
+  const handleTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const type = value ? SYMBOL_TO_TYPE[value as keyof typeof SYMBOL_TO_TYPE] : null;
+    onTypeChange?.(type);
+  };
+
   return (
-    <div className="flex gap-4 justify-center py-4">
-      <label className="flex items-center gap-2 cursor-pointer">
+    <div className="flex items-center gap-2 p-2 bg-gray-900/50 rounded-xl border border-gray-800 backdrop-blur-sm">
+      <div className="flex items-center gap-1">
         <input
           type="radio"
           name="prefixType"
+          value=""
           checked={selectedType === null}
-          onChange={() => onTypeSelect(null)}
-          className="w-4 h-4 text-green-500 border-gray-300 rounded-full focus:ring-green-500"
+          onChange={handleTypeChange}
+          className="hidden"
+          id="no-filter"
+          disabled={disabled}
         />
-        <span className="text-sm font-medium text-gray-700">
-          No filters
-        </span>
-      </label>
-      {Object.entries(PREFIXES).map(([symbol, { description }]) => (
-        <label key={symbol} className="flex items-center gap-2 cursor-pointer">
+        <label
+          htmlFor="no-filter"
+          className={`px-3 py-1 rounded-lg cursor-pointer transition-colors ${
+            selectedType === null
+              ? 'bg-gray-800 text-gray-100'
+              : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+          } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          All
+        </label>
+      </div>
+      {Object.entries(PREFIXES).map(([type, { symbol, description }]) => (
+        <div key={type} className="flex items-center gap-1">
           <input
             type="radio"
             name="prefixType"
-            checked={selectedType === symbol}
-            onChange={() => onTypeSelect(symbol as PrefixType)}
-            className="w-4 h-4 text-green-500 border-gray-300 rounded-full focus:ring-green-500"
+            value={symbol}
+            checked={selectedType === SYMBOL_TO_TYPE[symbol as keyof typeof SYMBOL_TO_TYPE]}
+            onChange={handleTypeChange}
+            className="hidden"
+            id={`filter-${type}`}
+            disabled={disabled}
           />
-          <span className="text-sm font-medium text-gray-700">
-            All {description}s
-          </span>
-        </label>
+          <label
+            htmlFor={`filter-${type}`}
+            className={`px-3 py-1 rounded-lg cursor-pointer transition-colors ${
+              selectedType === SYMBOL_TO_TYPE[symbol as keyof typeof SYMBOL_TO_TYPE]
+                ? 'bg-gray-800 text-gray-100'
+                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+            } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <span className="text-green-500 mr-1">{symbol}</span>
+            {description}
+          </label>
+        </div>
       ))}
     </div>
   );

@@ -14,6 +14,7 @@ create or replace function filter_by_prefixes(
 ) language plpgsql security definer as $$
 declare
   temp_table_exists boolean;
+  prefix_type text;
 begin
   -- Check if the temporary table exists
   select exists (
@@ -21,10 +22,20 @@ begin
     where table_name = 'temp_type_filtered_entries'
   ) into temp_table_exists;
 
-  -- If no prefix values provided, return entries from the appropriate source
+  -- Get the prefix type from the temporary table if it exists
+  if temp_table_exists then
+    select distinct p.type into prefix_type
+    from temp_type_filtered_entries e
+    join entry_prefixes ep on ep.entry_id = e.id
+    join prefixes p on p.id = ep.prefix_id
+    where e.user_id = current_user_id
+    limit 1;
+  end if;
+
+  -- If no prefix values provided
   if array_length(prefix_values, 1) is null then
+    -- If temp table exists, return entries from temp table
     if temp_table_exists then
-      -- Return all entries from the temporary table (type filtered)
       return query
       select 
         e.id,
@@ -48,8 +59,8 @@ begin
       from temp_type_filtered_entries e
       where e.user_id = current_user_id
       order by e.created_at desc;
+    -- If no temp table, return all entries
     else
-      -- Return all entries for the user
       return query
       select 
         e.id,
@@ -74,10 +85,10 @@ begin
       where e.user_id = current_user_id
       order by e.created_at desc;
     end if;
+  -- If prefix values provided
   else
-    -- Filter entries by prefix values
+    -- If temp table exists, filter entries from temp table
     if temp_table_exists then
-      -- Filter entries from the temporary table (type filtered)
       return query
       select 
         e.id,
@@ -114,8 +125,8 @@ begin
         from unnest(prefix_values) as v
       )
       order by e.created_at desc;
+    -- If no temp table, filter entries from main table
     else
-      -- Filter all entries for the user
       return query
       select 
         e.id,
@@ -155,4 +166,4 @@ begin
     end if;
   end if;
 end;
-$$;
+$$; 

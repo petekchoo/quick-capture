@@ -13,14 +13,30 @@ export function Auth() {
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('Auth: Attempting sign in with email:', email);
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
+      console.log('Auth: Sign in response:', { 
+        hasSession: !!data.session,
+        sessionUser: data.session?.user,
+        sessionToken: data.session?.access_token,
+        error 
+      });
+
       if (error) throw error;
+
+      // Force a session check after successful sign in
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('Auth: Post-sign-in session check:', {
+        hasSession: !!session,
+        sessionUser: session?.user,
+        sessionToken: session?.access_token
+      });
     } catch (err) {
-      console.error('Error signing in:', err);
+      console.error('Auth: Error signing in:', err);
       setError(err instanceof Error ? err.message : 'Failed to sign in');
     } finally {
       setLoading(false);
@@ -33,15 +49,22 @@ export function Auth() {
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      console.log('Auth: Attempting sign up with email:', email);
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
+      });
+
+      console.log('Auth: Sign up response:', { 
+        hasUser: !!data.user,
+        user: data.user,
+        error 
       });
 
       if (error) throw error;
       setError('Check your email for the confirmation link!');
     } catch (err) {
-      console.error('Error signing up:', err);
+      console.error('Auth: Error signing up:', err);
       setError(err instanceof Error ? err.message : 'Failed to sign up');
     } finally {
       setLoading(false);

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { PREFIXES, PrefixType } from '../constants/prefixes';
 import { supabase } from '../services/supabase';
-import type { PrefixType as EntryPrefixType } from '../types/entry';
 
 interface PrefixOverlayProps {
   currentPrefix: PrefixType;
@@ -17,21 +16,53 @@ export function PrefixOverlay({ currentPrefix, onClose, onPrefixSelect }: Prefix
   const overlayRef = useRef<HTMLDivElement>(null);
 
   // Find the symbol by matching the type
-  const symbol = Object.entries(PREFIXES).find(
-    ([_, def]) => def.type === currentPrefix
-  )?.[0] || '';
+  const symbol = PREFIXES[currentPrefix].symbol;
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (!prefixInput) {
+        setSuggestions([]);
+        return;
+      }
+
+      const { data: suggestions } = await supabase
+        .from('prefixes')
+        .select('id, value')
+        .eq('type', PREFIXES[currentPrefix].description)
+        .ilike('value', `%${prefixInput}%`)
+        .order('value')
+        .limit(5);
+
+      setSuggestions(suggestions || []);
+    };
+
+    fetchSuggestions();
+  }, [prefixInput, currentPrefix]);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      onPrefixSelect(e.currentTarget.value);
+      if (selectedIndex >= 0 && suggestions[selectedIndex]) {
+        onPrefixSelect(suggestions[selectedIndex].id);
+      } else if (prefixInput.trim()) {
+        // Create a new prefix if one doesn't exist
+        onPrefixSelect(prefixInput.trim());
+      }
     } else if (e.key === 'Escape') {
       e.preventDefault();
       onClose();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex(prev => 
+        prev < suggestions.length - 1 ? prev + 1 : prev
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex(prev => prev > 0 ? prev - 1 : 0);
     }
   };
 
@@ -46,33 +77,59 @@ export function PrefixOverlay({ currentPrefix, onClose, onPrefixSelect }: Prefix
       {/* Modal content */}
       <div 
         ref={overlayRef}
-        className="relative bg-gray-900 rounded-xl p-6 shadow-2xl w-96"
+        className="relative w-full max-w-md bg-gray-900 border border-gray-800 rounded-lg shadow-lg p-4"
       >
-        <div className="flex flex-col gap-4">
+        <div className="mb-4">
+          <h3 className="text-lg font-medium text-gray-100 mb-2">
+            Add {PREFIXES[currentPrefix].description}
+          </h3>
           <div className="flex items-center gap-2">
             <span className="text-gray-300 text-lg">{symbol}</span>
             <input
               ref={inputRef}
               type="text"
-              className="flex-1 bg-transparent border-b border-gray-600 text-gray-100 focus:outline-none focus:border-green-500 text-lg"
+              value={prefixInput}
+              onChange={(e) => setPrefixInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Enter prefix value..."
+              className="flex-1 p-2 bg-gray-800 text-gray-100 rounded border border-gray-700 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none"
+              placeholder={`Search or create ${PREFIXES[currentPrefix].description}...`}
+              autoFocus
             />
           </div>
-          <div className="flex justify-end gap-2 mt-4">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-300 hover:text-white"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => onPrefixSelect(inputRef.current?.value || '')}
-              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
-            >
-              Add
-            </button>
+        </div>
+        
+        {/* Suggestions dropdown */}
+        {suggestions.length > 0 && (
+          <div className="mb-4 max-h-48 overflow-y-auto">
+            {suggestions.map((suggestion, index) => (
+              <button
+                key={suggestion.id}
+                onClick={() => onPrefixSelect(suggestion.id)}
+                className={`w-full p-2 text-left text-gray-100 hover:bg-gray-800 rounded ${
+                  index === selectedIndex ? 'bg-gray-800' : ''
+                }`}
+              >
+                {suggestion.value}
+              </button>
+            ))}
           </div>
+        )}
+
+        <div className="flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-300 hover:text-gray-100"
+          >
+            Cancel
+          </button>
+          {prefixInput && suggestions.length === 0 && (
+            <button
+              onClick={() => onPrefixSelect(prefixInput)}
+              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+            >
+              Create
+            </button>
+          )}
         </div>
       </div>
     </div>

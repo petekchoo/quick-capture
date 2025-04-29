@@ -1,26 +1,39 @@
-export type PrefixType = '@' | '!' | '?' | '#';
+export type PrefixType = 'person' | 'action' | 'idea' | 'tag';
+export type PrefixSymbol = '@' | '!' | '?' | '#';
 
-export interface PrefixDefinition {
-  type: PrefixType;
-  description: string;
-  symbol: string;
+export const PREFIXES: Record<PrefixType, { symbol: PrefixSymbol; description: string }> = {
+  person: { symbol: '@', description: 'person' },
+  action: { symbol: '!', description: 'action' },
+  idea: { symbol: '?', description: 'idea' },
+  tag: { symbol: '#', description: 'tag' }
+};
+
+export const SYMBOL_TO_TYPE: Record<PrefixSymbol, PrefixType> = {
+  '@': 'person',
+  '!': 'action',
+  '?': 'idea',
+  '#': 'tag'
+};
+
+export const TYPE_TO_SYMBOL: Record<PrefixType, PrefixSymbol> = {
+  person: '@',
+  action: '!',
+  idea: '?',
+  tag: '#'
+};
+
+export function getPrefixType(symbol: PrefixSymbol): PrefixType {
+  return SYMBOL_TO_TYPE[symbol];
 }
 
-export const PREFIXES: Record<string, PrefixDefinition> = {
-  '@': { type: '@', description: 'person', symbol: '@' },
-  '!': { type: '!', description: 'action', symbol: '!' },
-  '?': { type: '?', description: 'idea', symbol: '?' },
-  '#': { type: '#', description: 'tag', symbol: '#' }
-};
+export function getPrefixSymbol(type: PrefixType): PrefixSymbol {
+  return TYPE_TO_SYMBOL[type];
+}
 
-export const getPrefixType = (symbol: string): PrefixType | null => {
-  return PREFIXES[symbol]?.type || null;
-};
+export function isValidPrefix(symbol: string): symbol is PrefixSymbol {
+  return symbol in SYMBOL_TO_TYPE;
+}
 
-export const isValidPrefix = (symbol: string): boolean => {
-  return symbol in PREFIXES;
-};
-
-export function getPrefixDescription(symbol: string): string {
-  return PREFIXES[symbol]?.description || '';
+export function getPrefixDescription(type: PrefixType): string {
+  return PREFIXES[type].description;
 } 
