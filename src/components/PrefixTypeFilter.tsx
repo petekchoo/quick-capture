@@ -15,8 +15,8 @@ export function PrefixTypeFilter({ selectedType, onTypeChange, disabled = false 
   };
 
   return (
-    <div className="flex items-center gap-2 p-2 bg-gray-900/50 rounded-xl border border-gray-800 backdrop-blur-sm">
-      <div className="flex items-center gap-1">
+    <div className="flex items-center gap-2 p-2 bg-gray-900/50 rounded-xl border border-gray-800 backdrop-blur-sm overflow-x-auto whitespace-nowrap">
+      <div className="flex items-center gap-1 shrink-0">
         <input
           type="radio"
           name="prefixType"
@@ -39,7 +39,7 @@ export function PrefixTypeFilter({ selectedType, onTypeChange, disabled = false 
         </label>
       </div>
       {Object.entries(PREFIXES).map(([type, { symbol, description }]) => (
-        <div key={type} className="flex items-center gap-1">
+        <div key={type} className="flex items-center gap-1 shrink-0">
           <input
             type="radio"
             name="prefixType"

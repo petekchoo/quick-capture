@@ -64,7 +64,7 @@ export function PrefixOverlay({ currentPrefix, onClose, onPrefixSelect }: Prefix
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop with blur */}
       <div 
         className="fixed inset-0 bg-black/50 backdrop-blur-sm"
@@ -74,20 +74,20 @@ export function PrefixOverlay({ currentPrefix, onClose, onPrefixSelect }: Prefix
       {/* Modal content */}
       <div 
         ref={overlayRef}
-        className="relative w-full max-w-md bg-gray-900 border border-gray-800 rounded-lg shadow-lg p-4"
+        className="relative w-full max-w-sm bg-gray-900 border border-gray-800 rounded-lg shadow-lg p-4"
       >
-        <div className="mb-4">
-          <h3 className="text-lg font-medium text-gray-100 mb-2">
+        <div className="mb-3">
+          <h3 className="text-base font-medium text-gray-100 mb-2">
             Add {PREFIXES[currentPrefix].description}
           </h3>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center">
             <input
               ref={inputRef}
               type="text"
               value={prefixInput}
               onChange={(e) => setPrefixInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="flex-1 p-2 bg-gray-800 text-gray-100 rounded border border-gray-700 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none"
+              className="w-full p-3 bg-gray-800 text-gray-100 rounded border border-gray-700 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none text-base"
               placeholder={`Search or create ${PREFIXES[currentPrefix].description}...`}
               autoFocus
             />
@@ -96,12 +96,12 @@ export function PrefixOverlay({ currentPrefix, onClose, onPrefixSelect }: Prefix
         
         {/* Suggestions dropdown */}
         {suggestions.length > 0 && (
-          <div className="mb-4 max-h-48 overflow-y-auto">
+          <div className="mb-3 max-h-40 overflow-y-auto">
             {suggestions.map((suggestion, index) => (
               <button
                 key={suggestion.id}
                 onClick={() => onPrefixSelect(suggestion.id)}
-                className={`w-full p-2 text-left text-gray-100 hover:bg-gray-800 rounded ${
+                className={`w-full p-3 text-left text-gray-100 hover:bg-gray-800 rounded ${
                   index === selectedIndex ? 'bg-gray-800' : ''
                 }`}
               >
@@ -114,14 +114,14 @@ export function PrefixOverlay({ currentPrefix, onClose, onPrefixSelect }: Prefix
         <div className="flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-300 hover:text-gray-100"
+            className="px-4 py-2.5 text-gray-300 hover:text-gray-100 text-base"
           >
             Cancel
           </button>
           {prefixInput && suggestions.length === 0 && (
             <button
               onClick={() => onPrefixSelect(prefixInput)}
-              className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+              className="px-4 py-2.5 bg-green-500 text-white rounded hover:bg-green-600 text-base"
             >
               Create
             </button>
