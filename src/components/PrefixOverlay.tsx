@@ -21,9 +21,7 @@ export function PrefixOverlay({ currentPrefix, onClose, onPrefixSelect }: Prefix
 
   useEffect(() => {
     const fetchSuggestions = async () => {
-      console.log('Fetching suggestions with:', { prefixInput, currentPrefix });
       if (!prefixInput) {
-        console.log('No prefix input, clearing suggestions');
         setSuggestions([]);
         return;
       }
@@ -36,7 +34,6 @@ export function PrefixOverlay({ currentPrefix, onClose, onPrefixSelect }: Prefix
         .order('value')
         .limit(5);
 
-      console.log('Fetched suggestions:', suggestions);
       setSuggestions(suggestions || []);
     };
 
@@ -44,10 +41,8 @@ export function PrefixOverlay({ currentPrefix, onClose, onPrefixSelect }: Prefix
   }, [prefixInput, currentPrefix]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    console.log('Key pressed:', e.key);
     if (e.key === 'Enter') {
       e.preventDefault();
-      console.log('Enter pressed with:', { selectedIndex, suggestions, prefixInput });
       if (selectedIndex >= 0 && suggestions[selectedIndex]) {
         onPrefixSelect(suggestions[selectedIndex].id);
       } else if (prefixInput.trim()) {
@@ -90,10 +85,7 @@ export function PrefixOverlay({ currentPrefix, onClose, onPrefixSelect }: Prefix
               ref={inputRef}
               type="text"
               value={prefixInput}
-              onChange={(e) => {
-                console.log('Input changed:', e.target.value);
-                setPrefixInput(e.target.value);
-              }}
+              onChange={(e) => setPrefixInput(e.target.value)}
               onKeyDown={handleKeyDown}
               className="w-full p-3 bg-gray-800 text-gray-100 rounded border border-gray-700 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none text-base"
               placeholder={`Search or create ${PREFIXES[currentPrefix].description}...`}
@@ -108,10 +100,7 @@ export function PrefixOverlay({ currentPrefix, onClose, onPrefixSelect }: Prefix
             {suggestions.map((suggestion, index) => (
               <button
                 key={suggestion.id}
-                onClick={() => {
-                  console.log('Selected prefix:', suggestion);
-                  onPrefixSelect(suggestion.id);
-                }}
+                onClick={() => onPrefixSelect(suggestion.id)}
                 className={`w-full p-3 text-left text-gray-100 hover:bg-gray-800 rounded ${
                   index === selectedIndex ? 'bg-gray-800' : ''
                 }`}
@@ -131,10 +120,7 @@ export function PrefixOverlay({ currentPrefix, onClose, onPrefixSelect }: Prefix
           </button>
           {prefixInput && suggestions.length === 0 && (
             <button
-              onClick={() => {
-                console.log('Create button clicked with:', prefixInput);
-                onPrefixSelect(prefixInput);
-              }}
+              onClick={() => onPrefixSelect(prefixInput)}
               className="px-4 py-2.5 bg-green-500 text-white rounded hover:bg-green-600 text-base"
             >
               Create

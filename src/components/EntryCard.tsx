@@ -23,7 +23,6 @@ export function EntryCard({ entry, onDelete }: EntryCardProps) {
   const [addedPrefixIds, setAddedPrefixIds] = useState<string[]>([]);
   const [isPrefixOverlayOpen, setIsPrefixOverlayOpen] = useState(false);
   const [currentPrefix, setCurrentPrefix] = useState<PrefixType | null>(null);
-  const [prefixInput, setPrefixInput] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -129,13 +128,9 @@ export function EntryCard({ entry, onDelete }: EntryCardProps) {
 
     // Check for prefix symbol
     const lastChar = value[value.length - 1];
-    console.log('Last character:', lastChar);
-    console.log('Current prefix state:', currentPrefix);
     
     if (['@', '!', '?', '#'].includes(lastChar)) {
-      console.log('Prefix symbol detected:', lastChar);
       const prefixType = SYMBOL_TO_TYPE[lastChar as keyof typeof SYMBOL_TO_TYPE];
-      console.log('Prefix type:', prefixType);
       setCurrentPrefix(prefixType);
       setIsPrefixOverlayOpen(true);
       setEditedContent(value.slice(0, -1));
@@ -212,7 +207,6 @@ export function EntryCard({ entry, onDelete }: EntryCardProps) {
     // Close the overlay and reset state
     setIsPrefixOverlayOpen(false);
     setCurrentPrefix(null);
-    setPrefixInput('');
 
     // Set focus and cursor position after state update
     setTimeout(() => {
@@ -328,14 +322,12 @@ export function EntryCard({ entry, onDelete }: EntryCardProps) {
 
       {isEditing && isPrefixOverlayOpen && currentPrefix && (
         (() => {
-          console.log('Rendering PrefixOverlay:', { isEditing, isPrefixOverlayOpen, currentPrefix });
           return (
             <PrefixOverlay
               currentPrefix={currentPrefix}
               onClose={() => {
                 setIsPrefixOverlayOpen(false);
                 setCurrentPrefix(null);
-                setPrefixInput('');
                 setTimeout(() => {
                   textareaRef.current?.focus();
                 }, 0);
