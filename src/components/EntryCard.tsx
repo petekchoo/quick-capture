@@ -1,8 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { Entry } from '../types/database';
-import { TYPE_TO_SYMBOL } from '../constants/prefixes';
+import { TYPE_TO_SYMBOL, SYMBOL_TO_TYPE, PrefixType, PREFIXES } from '../constants/prefixes';
 import { EntryService } from '../services/entryService';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
+import { PrefixOverlay } from './PrefixOverlay';
+import { supabase } from '../services/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 interface EntryCardProps {
   entry: Entry;
@@ -10,12 +13,17 @@ interface EntryCardProps {
 }
 
 export function EntryCard({ entry, onDelete }: EntryCardProps) {
+  const { user } = useAuth();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(entry.content);
   const [originalContent, setOriginalContent] = useState(entry.content);
   const [originalPrefixes, setOriginalPrefixes] = useState(entry.entry_prefixes);
   const [removedPrefixIds, setRemovedPrefixIds] = useState<string[]>([]);
+  const [addedPrefixIds, setAddedPrefixIds] = useState<string[]>([]);
+  const [isPrefixOverlayOpen, setIsPrefixOverlayOpen] = useState(false);
+  const [currentPrefix, setCurrentPrefix] = useState<PrefixType | null>(null);
+  const [prefixInput, setPrefixInput] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -55,6 +63,8 @@ export function EntryCard({ entry, onDelete }: EntryCardProps) {
       
       // Track the removed prefix ID
       setRemovedPrefixIds(prev => [...prev, prefixId]);
+      // Remove from added prefixes if it was added in this edit session
+      setAddedPrefixIds(prev => prev.filter(id => id !== prefixId));
     } catch (error) {
       console.error('Failed to remove prefix:', error);
     }
@@ -62,9 +72,43 @@ export function EntryCard({ entry, onDelete }: EntryCardProps) {
 
   const handleSave = async () => {
     try {
-      await EntryService.updateEntry(entry.id, editedContent, removedPrefixIds);
+      // First, update the entry content
+      await EntryService.updateEntry(entry.id, editedContent);
+
+      // Process removed prefixes
+      if (removedPrefixIds.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('entry_prefixes')
+          .delete()
+          .eq('entry_id', entry.id)
+          .in('prefix_id', removedPrefixIds);
+
+        if (deleteError) {
+          console.error('Failed to delete removed prefixes:', deleteError);
+          return;
+        }
+      }
+
+      // Process added prefixes
+      if (addedPrefixIds.length > 0) {
+        const newEntryPrefixes = addedPrefixIds.map(prefixId => ({
+          entry_id: entry.id,
+          prefix_id: prefixId
+        }));
+
+        const { error: insertError } = await supabase
+          .from('entry_prefixes')
+          .insert(newEntryPrefixes);
+
+        if (insertError) {
+          console.error('Failed to insert new prefixes:', insertError);
+          return;
+        }
+      }
+
       setIsEditing(false);
       setRemovedPrefixIds([]);
+      setAddedPrefixIds([]);
       onDelete?.(); // Refresh the list
     } catch (error) {
       console.error('Failed to update entry:', error);
@@ -75,7 +119,108 @@ export function EntryCard({ entry, onDelete }: EntryCardProps) {
     setEditedContent(originalContent);
     entry.entry_prefixes = originalPrefixes;
     setRemovedPrefixIds([]);
+    setAddedPrefixIds([]);
     setIsEditing(false);
+  };
+
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setEditedContent(value);
+
+    // Check for prefix symbol
+    const lastChar = value[value.length - 1];
+    console.log('Last character:', lastChar);
+    console.log('Current prefix state:', currentPrefix);
+    
+    if (['@', '!', '?', '#'].includes(lastChar)) {
+      console.log('Prefix symbol detected:', lastChar);
+      const prefixType = SYMBOL_TO_TYPE[lastChar as keyof typeof SYMBOL_TO_TYPE];
+      console.log('Prefix type:', prefixType);
+      setCurrentPrefix(prefixType);
+      setIsPrefixOverlayOpen(true);
+      setEditedContent(value.slice(0, -1));
+    }
+  };
+
+  const handleOverlayPrefixSelect = async (prefixId: string) => {
+    if (!currentPrefix) return;
+    
+    // Check if this is a new prefix (string) or existing prefix (ID)
+    let prefixValue: string;
+    let newPrefixId: string;
+
+    // If the prefixId is a UUID (contains hyphens), it's an existing prefix
+    if (prefixId.includes('-')) {
+      // This is an existing prefix ID
+      const { data: prefix, error } = await supabase
+        .from('prefixes')
+        .select('*')
+        .eq('id', prefixId)
+        .single();
+
+      if (error) {
+        console.error('Failed to fetch prefix:', error);
+        return;
+      }
+
+      prefixValue = prefix.value;
+      newPrefixId = prefixId;
+    } else {
+      // This is a new prefix value
+      prefixValue = prefixId;
+      
+      // Create the new prefix
+      const { data, error } = await supabase
+        .from('prefixes')
+        .insert({
+          value: prefixValue,
+          type: PREFIXES[currentPrefix].description,
+          user_id: user?.id
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Failed to create prefix:', error);
+        return;
+      }
+
+      newPrefixId = data.id;
+    }
+
+    // Get the symbol for the current prefix type
+    const symbol = PREFIXES[currentPrefix].symbol;
+    
+    // Add the prefix to the content in the format [symbolprefixtext]
+    const newContent = editedContent + `[${symbol}${prefixValue}]`;
+    setEditedContent(newContent);
+    
+    // Add the prefix to entry.entry_prefixes
+    const newPrefix = {
+      id: crypto.randomUUID(),
+      prefix: {
+        id: newPrefixId,
+        value: prefixValue,
+        type: currentPrefix
+      }
+    };
+    entry.entry_prefixes = [...entry.entry_prefixes, newPrefix];
+    
+    // Track the added prefix
+    setAddedPrefixIds(prev => [...prev, newPrefixId]);
+    
+    // Close the overlay and reset state
+    setIsPrefixOverlayOpen(false);
+    setCurrentPrefix(null);
+    setPrefixInput('');
+
+    // Set focus and cursor position after state update
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(newContent.length, newContent.length);
+      }
+    }, 0);
   };
 
   return (
@@ -86,7 +231,7 @@ export function EntryCard({ entry, onDelete }: EntryCardProps) {
             <textarea
               ref={textareaRef}
               value={editedContent}
-              onChange={(e) => setEditedContent(e.target.value)}
+              onChange={handleContentChange}
               className="text-gray-100 font-mono text-sm whitespace-pre-wrap flex-1 bg-transparent resize-none focus:outline-none"
               rows={3}
             />
@@ -180,6 +325,26 @@ export function EntryCard({ entry, onDelete }: EntryCardProps) {
           handleDelete();
         }}
       />
+
+      {isEditing && isPrefixOverlayOpen && currentPrefix && (
+        (() => {
+          console.log('Rendering PrefixOverlay:', { isEditing, isPrefixOverlayOpen, currentPrefix });
+          return (
+            <PrefixOverlay
+              currentPrefix={currentPrefix}
+              onClose={() => {
+                setIsPrefixOverlayOpen(false);
+                setCurrentPrefix(null);
+                setPrefixInput('');
+                setTimeout(() => {
+                  textareaRef.current?.focus();
+                }, 0);
+              }}
+              onPrefixSelect={handleOverlayPrefixSelect}
+            />
+          );
+        })()
+      )}
     </>
   );
 } 
